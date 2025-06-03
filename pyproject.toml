@@ -14,3 +14,10 @@ description = "Python library to generate randomart of a bytes string"
 classifiers = [
   "Programming Language :: Python :: 3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/aaronm6/pyrandomart"
+Repository = "https://github.com/aaronm6/pyrandomart.git"
+
+
+
