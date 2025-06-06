@@ -74,27 +74,38 @@ def _coord_pair_to_position(cpair, dims=(9, 17)):
     pos = cpair[1]*dims[1] + cpair[0] #
     return pos
 
-def _gen_header_footer_line(label, poz='header', dims=(9, 17)):
+_bc = {} # "bc" = "box characters", i.e. the characters that make up the border of the box
+_bc['clean'] = {
+    'tl': chr(0x250f),
+    'tr': chr(0x2513),
+    'bl': chr(0x2517),
+    'br': chr(0x251b),
+    'hline': chr(0x2501),
+    'vline': chr(0x2503)}
+_bc['simple'] = {
+    'tl': '+',
+    'tr': '+',
+    'bl': '+',
+    'br': '+',
+    'hline': '-',
+    'vline': '|'}
+
+def _gen_header_footer_line(label, poz=None, dims=None, box=None):
     pre_space = (dims[1]-min(dims[1]-2,len(label))-2)//2 #
     post_space = (dims[1]-min(dims[1]-2,len(label))-2) - pre_space #
-    tl = chr(0x250f)
-    tr = chr(0x2513)
-    bl = chr(0x2517)
-    br = chr(0x251b)
-    hline = chr(0x2501)
     if poz == 'header':
-        lcor = tl
-        rcor = tr
+        lcor = box['tl']
+        rcor = box['tr']
     elif poz == 'footer':
-        lcor = bl
-        rcor = br
+        lcor = box['bl']
+        rcor = box['br']
     else:
         raise ValueError("Cannot interpret kwarg 'poz'")
-    line_text = lcor + hline*pre_space + '[' + label[:(dims[1]-2)] + ']' + \
-        hline*post_space + rcor
+    line_text = lcor + box['hline']*pre_space + '[' + label[:(dims[1]-2)] + ']' + \
+        box['hline']*post_space + rcor
     return line_text
 
-def randomart(bStr, header='RSA 4096', footer='SHA256', dims=(9, 17)):
+def randomart(bStr, header='RSA 4096', footer='SHA256', dims=(9, 17), box='clean'):
     """
     This function takes a bytes object ('bStr') and generates the 
     corresponding random art string.
@@ -105,6 +116,15 @@ def randomart(bStr, header='RSA 4096', footer='SHA256', dims=(9, 17)):
       footer: Str object to be displayed at the footer of the randomart box
         dims: List or tuple object with dimensions of the randomart box.  
               Dims must be odd ints.  dims = (rows, columns)
+         box: str or dict which describes what characters will form the border
+              of the randomart box.  If a str, then it must be 'clean' or 
+              'simple'.  If a dict, it must have these keys defined:
+                'tl': top-left character
+                'tr': top-right character
+                'bl': bottom-left character
+                'br': bottom-right character
+                'hline': horizontal line character, i.e. top a and bottom of box
+                'vline': vertical line character, i.e. left and right of box
     Output:
      randomart_text: Str object with randomart text corresponding to input bStr
      
@@ -138,6 +158,19 @@ def randomart(bStr, header='RSA 4096', footer='SHA256', dims=(9, 17)):
         raise ValueError("Number of rows must be odd")
     if not (dims[1] % 2) == 1:
         raise ValueError("Number of columns must be odd")
+    if not isinstance(box, (str, dict)):
+        raise TypeError("Keyword argument 'box' must be a str or dict object")
+    bc = None
+    if isinstance(box,str):
+        if box.lower() not in ('clean','simple'):
+            raise ValueError("Keyword argument 'box' must be 'clean' or 'simple' if it's a string")
+        bc = _bc[box]
+    if isinstance(box,dict):
+        if not all([item in box for item in _bc['clean']]):
+            raise ValueError("box as a dict must have keys: 'tl', 'tr', 'bl', 'br', 'hline', 'vline'")
+        if not all([isinstance(box[item], str) and len(box[item])==1 for item in box]):
+            raise ValueError("box dict values must be single-character strings")
+        bc = box
     bitPairs = _bytes2bitpairs(bStr)
     xyPosList = _gen_xy_positions(bitPairs, dims=dims)
     posnumList = [_coord_pair_to_position(pair, dims=dims) for 
@@ -152,13 +185,14 @@ def randomart(bStr, header='RSA 4096', footer='SHA256', dims=(9, 17)):
     boardCharList[startPos] = 'S'
     boardCharList[posnumList[-1]] = 'E'
     boardCharStr = ''.join(boardCharList)
-    vline = chr(0x2503)
+    #vline = chr(0x2503)
     # split up the str in chunks of dims[1] (i.e. into rows)
     iterList = [iter(boardCharStr)]*dims[1] #
     boardCharStrChunks = [''.join(item) for item in zip(*iterList)]
-    dispCharChunks = [vline + item + vline for item in boardCharStrChunks]
-    headerText = _gen_header_footer_line(header, poz='header', dims=dims)
-    footerText = _gen_header_footer_line(footer, poz='footer', dims=dims)
+    #dispCharChunks = [_bc[box]['vline'] + item + _bc[box]['vline'] for item in boardCharStrChunks]
+    dispCharChunks = [bc['vline'] + item + bc['vline'] for item in boardCharStrChunks]
+    headerText = _gen_header_footer_line(header, poz='header', dims=dims, box=bc)
+    footerText = _gen_header_footer_line(footer, poz='footer', dims=dims, box=bc)
     dispCharChunks = [headerText] + dispCharChunks + [footerText]
     displayText = '\n'.join(dispCharChunks)
     return displayText
