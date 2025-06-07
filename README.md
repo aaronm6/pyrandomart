@@ -24,12 +24,13 @@ The only function in this package that is useful to import is the last one, '`ra
 ```
 `randomart`'s call signature and explantion of inputs:
 ```shell
-randomart(bStr, header='RSA 4096', footer='SHA256', dims=(9, 17))
+randomart(bStr, header='RSA 4096', footer='SHA256', dims=(9, 17), box='clean')
 ```
 - `bStr`: Bytes object with the hash to be turned into randomart
 - `header`: Str object to be displayed at the header of the randomart box
 - `footer`: Str object to be displayed at the footer of the randomart box
-- `dims`: List or tuple object with dimensions of the randomart box (rows, columns). Dims must be odd ints. 
+- `dims`: List or tuple object with dimensions of the randomart box (rows, columns). Dims must be odd ints.
+- `box`: Describes the characters that make up the border of the randomart box.  Input value can be 'clean' or 'simple', or a custom dict object can be provided.
 
 For example, to turn a bytes object consisting of byte values 30 through 60 into randomart and print:
 ```shell
